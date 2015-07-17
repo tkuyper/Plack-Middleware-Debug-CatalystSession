@@ -17,11 +17,12 @@ Plack::Middleware::Debug::CatalystSession - Debug panel to inspect the Catalyst 
 
 =head1 VERSION
 
-Version 0.01001
+Version 0.01002
 
 =cut
 
-our $VERSION = '0.01001';
+our $VERSION = '0.01002';
+my $psgi_env;
 
 install_modifier 'Catalyst', 'before', 'finalize' => sub {
     my $c = shift;
@@ -29,18 +30,20 @@ install_modifier 'Catalyst', 'before', 'finalize' => sub {
     local $Data::Dumper::Terse = 1;
     local $Data::Dumper::Indent = 1;
     local $Data::Dumper::Deparse = 1;
-    $c->req->env->{'plack.middleware.catalyst_session'} =
+    $psgi_env->{'plack.middleware.catalyst_session'} =
         encode_entities_numeric( Dumper( $c->session ) );
 };
 
 sub run {
     my($self, $env, $panel) = @_;
+    $psgi_env = $ref;
 
     return sub {
         my $res = shift;
 
         my $session = delete $env->{'plack.middleware.catalyst_session'} || 'No Session';
         $panel->content("<pre>$session</pre>");
+        $psgi_env = undef;
     };
 }
 
