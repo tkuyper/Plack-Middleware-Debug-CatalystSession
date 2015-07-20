@@ -17,11 +17,11 @@ Plack::Middleware::Debug::CatalystSession - Debug panel to inspect the Catalyst 
 
 =head1 VERSION
 
-Version 0.01002
+Version 0.01003
 
 =cut
 
-our $VERSION = '0.01002';
+our $VERSION = '0.01003';
 my $psgi_env;
 
 install_modifier 'Catalyst', 'before', 'finalize' => sub {
@@ -36,7 +36,7 @@ install_modifier 'Catalyst', 'before', 'finalize' => sub {
 
 sub run {
     my($self, $env, $panel) = @_;
-    $psgi_env = $ref;
+    $psgi_env = $env;
 
     return sub {
         my $res = shift;

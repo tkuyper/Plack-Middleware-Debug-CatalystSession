@@ -8,3 +8,6 @@ Revision history for Plack-Middleware-Debug-CatalystSession
 
 0.01002 07/17/2015 - 04:30pm CDT
         Keep our psgi environment in a variable. Using $c->req->env no longer works.
+
+0.01003 07/20/2015 - 04:18pm CDT
+        Stupid mistake in copying fix from working directory into git directory.
