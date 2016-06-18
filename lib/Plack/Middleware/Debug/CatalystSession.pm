@@ -21,8 +21,14 @@ Version 0.01003
 
 =cut
 
-our $VERSION = '0.01003';
-my $psgi_env;
+our $VERSION = '0.01004';
+# Starting with Catalyst 5.90097, the environment given to psgi middleware
+# components was localized. This effectively made $c->req->env read only.
+# If we are on those versions of Catalyst, we want to store a reference
+# to the environment in a local variable.
+use constant LOCALIZED_PSGI_ENV => $Catalyst::VERSION >= 5.90097 && $Catalyst::VERSION < 5.90100;
+my $psgi_env; # Unused if LOCALIZED_PSGI_ENV is true
+my $env_key = 'plack.middleware.catalyst_session';
 
 install_modifier 'Catalyst', 'before', 'finalize' => sub {
     my $c = shift;
@@ -30,20 +36,31 @@ install_modifier 'Catalyst', 'before', 'finalize' => sub {
     local $Data::Dumper::Terse = 1;
     local $Data::Dumper::Indent = 1;
     local $Data::Dumper::Deparse = 1;
-    $psgi_env->{'plack.middleware.catalyst_session'} =
+    my $session =
         encode_entities_numeric( Dumper( $c->session ) );
+    if (LOCALIZED_PSGI_ENV) {
+      $psgi_env->{$env_key} = $session;
+    } else {
+      $c->req->env->{$env_key} = $session;
+    }
 };
 
 sub run {
     my($self, $env, $panel) = @_;
-    $psgi_env = $env;
+    if (LOCALIZED_PSGI_ENV) {
+      # At this point, $env is NOT a localized reference, so we store it
+      $psgi_env = $env;
+    }
 
     return sub {
         my $res = shift;
 
-        my $session = delete $env->{'plack.middleware.catalyst_session'} || 'No Session';
+        my $session = delete $env->{$env_key} || 'No Session';
         $panel->content("<pre>$session</pre>");
-        $psgi_env = undef;
+        if (LOCALIZED_PSGI_ENV) {
+          # Clean up our stored reference
+          $psgi_env = undef;
+        }
     };
 }
 
